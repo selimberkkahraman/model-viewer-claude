@@ -214,7 +214,7 @@
       #viewer-wrap { right: 0; bottom: 148px; }
 
       /* AR button below topbar */
-      #ar-btn { display: flex; top: 68px; right: 14px; }
+      #ar-btn { display: flex; top: 14px; right: 14px; }
 
       /* Model info and env bar sit within the visible viewer area */
       #model-info { bottom: 212px; left: 16px; }
@@ -320,7 +320,7 @@
     </div>
   </div>
 
-  <!-- VIEWER + AR BUTTON -->
+  <!-- VIEWER -->
   <div id="viewer-wrap">
     <model-viewer
       id="mv"
@@ -329,11 +329,11 @@
       auto-rotate-delay="2500"
       rotation-per-second="10deg"
       touch-action="pan-y"
-      shadow-intensity="1"
+      shadow-intensity="0"
       shadow-softness="0.6"
       ar
       ar-modes="webxr scene-viewer quick-look"
-    ></model-viewer>
+      ></model-viewer>
 
     <!--
       ── WHY AR ISN'T SHOWING ON iPhone ──────────────────────
@@ -449,20 +449,6 @@
   let activeId = null;
   let toastTimer = null;
 
-  // ── AR BUTTON ──────────────────────────────────────────
-  arBtn.addEventListener('click', () => {
-    if (mv.canActivateAR) {
-      mv.activateAR();
-    } else {
-      showToast(
-        'AR not available right now.\n\n' +
-        'To enable on iPhone, choose one:\n' +
-        '① Serve over HTTPS — run ngrok to get a secure tunnel to your local server.\n' +
-        '② Add .usdz files — convert your .glb with Apple\'s free Reality Converter app, then add  ios: "models/XX.usdz"  to each MODELS entry.'
-      );
-    }
-  });
-
   function showToast(msg) {
     arToast.textContent = msg;
     arToast.classList.add('show');
@@ -550,6 +536,24 @@
   });
 
   // ── INIT ───────────────────────────────────────────────
+  
+arBtn.addEventListener('click', () => {
+    if (mv.canActivateAR) {
+      mv.activateAR();
+    } else {
+      showToast(
+        'AR not available right now.\n\n' +
+        'To enable on iPhone, choose one:\n' +
+        '① Serve over HTTPS — run ngrok to get a secure tunnel to your local server.\n' +
+        '② Add .usdz files — convert your .glb with Apple\'s free Reality Converter app, then add  ios: "models/XX.usdz"  to each MODELS entry.'
+      );
+    }
+  });
+
+  console.log('canActivateAR:', mv.canActivateAR);
+  console.log('ios-src:', mv.getAttribute('ios-src'));
+  console.log('src:', mv.src);
+  
   buildEnvBar();
   buildGrid(MODELS);
   applyEnv(ENVS[0]);
