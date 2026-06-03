@@ -53,6 +53,8 @@
       width: 100%; height: 100%; background: #F6F8FC;
       --progress-bar-color: var(--blue); --progress-mask: var(--blue-light);
     }
+    /* Hide model-viewer's own AR button — only our custom #ar-btn should show */
+    model-viewer::part(default-ar-button) { display: none !important; }
 
     /* ── AR BUTTON ───────────────────────────────────────────
        Positioned absolute inside #viewer-wrap.
@@ -147,7 +149,7 @@
     #search:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px var(--blue-glow); }
     #search::placeholder { color: var(--muted); }
     #model-grid {
-      flex: 1; overflow-y: auto; padding: 11px;
+      flex: 1; min-height: 0; overflow-y: auto; padding: 11px;
       display: grid; grid-template-columns: 1fr 1fr;
       gap: 8px; align-content: start;
       scrollbar-width: thin; scrollbar-color: rgba(24,73,169,0.14) transparent;
@@ -212,6 +214,9 @@
 
       /* KEY FIX: viewer stops where the strip starts */
       #viewer-wrap { right: 0; bottom: 148px; }
+
+      /* Poster image: shift up to match the 3D model's visual center */
+      model-viewer::part(default-poster) { background-position: center 35%; }
 
       /* AR button below topbar */
       #ar-btn { display: flex; top: 14px; right: 14px; }
@@ -293,9 +298,9 @@
 
       /* 2-column scrollable grid */
       #model-grid {
+        flex: 1; min-height: 0;
         display: grid; grid-template-columns: 1fr 1fr;
         overflow-y: auto; overflow-x: hidden;
-        flex-direction: unset; height: auto;
         align-content: start; gap: 7px; padding: 8px;
       }
       .model-card { aspect-ratio: 1 / 0.82; width: auto; height: auto; flex-shrink: unset; }
@@ -537,23 +542,43 @@
 
   // ── INIT ───────────────────────────────────────────────
   
-arBtn.addEventListener('click', () => {
+  // ── AR BUTTON ──────────────────────────────────────────
+  // iOS AR only works in Safari. If the user is on Chrome/Firefox/etc.
+  // on iOS, we redirect to the same URL in Safari using the
+  // x-safari-https:// scheme, which iOS handles natively.
+  arBtn.addEventListener('click', () => {
+    const ua = navigator.userAgent;
+    const isIOS     = /iPad|iPhone|iPod/.test(ua);
+    const isSafari  = /Safari/.test(ua) &&
+                      !/CriOS/.test(ua) &&   // Chrome iOS
+                      !/Chrome/.test(ua) &&
+                      !/FxiOS/.test(ua) &&   // Firefox iOS
+                      !/OPiOS/.test(ua);     // Opera iOS
+
+    // Non-Safari iOS: redirect to same page in Safari
+    if (isIOS && !isSafari) {
+      showToast('AR requires Safari on iPhone.\nOpening Safari now…');
+      setTimeout(() => {
+        window.location.href = window.location.href
+          .replace(/^https:\/\//, 'x-safari-https://')
+          .replace(/^http:\/\//, 'x-safari-http://');
+      }, 1200);
+      return;
+    }
+
+    // Safari iOS or Android: try AR directly
     if (mv.canActivateAR) {
       mv.activateAR();
     } else {
       showToast(
         'AR not available right now.\n\n' +
-        'To enable on iPhone, choose one:\n' +
-        '① Serve over HTTPS — run ngrok to get a secure tunnel to your local server.\n' +
-        '② Add .usdz files — convert your .glb with Apple\'s free Reality Converter app, then add  ios: "models/XX.usdz"  to each MODELS entry.'
+        'Make sure you\'re on Safari (iOS) or Chrome (Android).\n' +
+        'For Quick Look on iPhone, add .usdz files:\n' +
+        '  ios: "models/modelXX.usdz"  in each MODELS entry.'
       );
     }
   });
 
-  console.log('canActivateAR:', mv.canActivateAR);
-  console.log('ios-src:', mv.getAttribute('ios-src'));
-  console.log('src:', mv.src);
-  
   buildEnvBar();
   buildGrid(MODELS);
   applyEnv(ENVS[0]);
